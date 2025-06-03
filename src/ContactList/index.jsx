@@ -1,7 +1,11 @@
-import "./contact-list.css";
 import MyButton from "../Button";
 import Stack from "@mui/material/Stack";
 import Box from "@mui/material/Box";
+import { Snackbar, Alert } from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import DialogDeleteContact from "../DialogDeleteContact";
 
 function ContactList({
   newContacts,
@@ -11,7 +15,26 @@ function ContactList({
   loading,
   error,
 }) {
-  const combinedContacts = [...apiContacts, ...newContacts];
+  const combinedContacts = [...(apiContacts || []), ...(newContacts || [])];
+  const location = useLocation();
+
+  const success = location.state?.success;
+  const navigate = useNavigate();
+
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [deletedContactName, setDeletedContactName] = useState("");
+
+  const [openDialog, setOpenDialog] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState(null);
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        navigate(location.pathname, { replace: true });
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, navigate, location.pathname]);
 
   if (loading) return <p>Loading contacts...</p>;
   if (error) return <p>Error loading contacts: {error}</p>;
@@ -19,12 +42,38 @@ function ContactList({
   return (
     <Box
       sx={{
-        fontFamily: "default",
-        maxWidth: "600px",
-        margin: "0 auto",
-        padding: "20px",
+        maxWidth: "1000px",
+        mx: "auto",
+        px: { xs: 1, sm: 2, md: 3 },
+        py: { xs: 2, sm: 3, md: 4 },
       }}
     >
+      {success && (
+        <Alert
+          sx={{ m: 2 }}
+          severity="success"
+          icon={<CheckCircleIcon fontSize="inherit" />}
+        >
+          Contact successfully added!
+        </Alert>
+      )}
+
+      <Snackbar
+        open={deleteSuccess}
+        autoHideDuration={3000}
+        onClose={() => setDeleteSuccess(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setDeleteSuccess(false)}
+          severity="success"
+          sx={{ width: "100%" }}
+          icon={<CheckCircleIcon fontSize="inherit" />}
+        >
+          Contact <strong>{deletedContactName}</strong> deleted!
+        </Alert>
+      </Snackbar>
+
       <h3>Contacts</h3>
       {combinedContacts.length === 0 ? (
         <p>No contacts found.</p>
@@ -35,10 +84,11 @@ function ContactList({
 
             return (
               <Stack
-                direction="row"
+                direction={{ xs: "column", sm: "row" }}
                 alignItems="center"
+                key={contact.id || contact.email}
                 justifyContent="space-between"
-                spacing={2}
+                spacing={{ xs: 1, sm: 3 }}
                 sx={{
                   border: "1px solid #ccc",
                   borderRadius: "8px",
@@ -47,7 +97,6 @@ function ContactList({
                   backgroundColor: "#fafafa",
                   marginBottom: "12px",
                 }}
-                key={index}
               >
                 <p>
                   <strong>{contact.name}</strong>
@@ -55,20 +104,56 @@ function ContactList({
                 <p>{contact.email} </p>
                 <p>{contact.phone}</p>
 
-                <MyButton
-                  onClick={() => {
-                    isNew
-                      ? deleteNewContact(contact)
-                      : deleteAPIContact(contact);
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: 2,
                   }}
-                  label="Delete"
-                  color="error"
-                />
+                >
+                  <MyButton
+                    onClick={() => {
+                      if (newContacts.includes(contact)) {
+                        navigate("/edit-contact", { state: { contact } });
+                      } else {
+                        alert("Editing API contacts is not supported.");
+                      }
+                    }}
+                    label="Edit"
+                    color="primary"
+                    sx={{ ml: "auto" }}
+                  />
+
+                  <MyButton
+                    onClick={() => {
+                      setContactToDelete(contact);
+                      setOpenDialog(true);
+                    }}
+                    label="Delete"
+                    color="error"
+                  />
+                </Box>
               </Stack>
             );
           })}
         </ul>
       )}
+
+      <DialogDeleteContact
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        contact={contactToDelete}
+        onConfirm={() => {
+          if (newContacts.includes(contactToDelete)) {
+            deleteNewContact(contactToDelete);
+          } else {
+            deleteAPIContact(contactToDelete);
+          }
+          setDeletedContactName(contactToDelete.name);
+          setDeleteSuccess(true);
+          setOpenDialog(false);
+        }}
+      />
     </Box>
   );
 }
