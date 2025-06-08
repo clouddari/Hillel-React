@@ -7,15 +7,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import DialogDeleteContact from "../DialogDeleteContact";
 
-function ContactList({
-  newContacts,
-  apiContacts,
-  deleteNewContact,
+import { useSelector, useDispatch } from "react-redux";
+import {
+  deleteContact,
   deleteAPIContact,
-  loading,
-  error,
-}) {
-  const combinedContacts = [...(apiContacts || []), ...(newContacts || [])];
+} from "../../features/contacts/contactsSlice";
+
+function ContactList() {
   const location = useLocation();
 
   const success = location.state?.success;
@@ -26,6 +24,14 @@ function ContactList({
 
   const [openDialog, setOpenDialog] = useState(false);
   const [contactToDelete, setContactToDelete] = useState(null);
+
+  const dispatch = useDispatch();
+  const newContacts = useSelector((state) => state.contacts.newContacts);
+  const apiContacts = useSelector((state) => state.contacts.apiContacts);
+  const loading = useSelector((state) => state.contacts.loading);
+  const error = useSelector((state) => state.contacts.error);
+
+  const combinedContacts = [...(apiContacts || []), ...(newContacts || [])];
 
   useEffect(() => {
     if (success) {
@@ -145,9 +151,9 @@ function ContactList({
         contact={contactToDelete}
         onConfirm={() => {
           if (newContacts.includes(contactToDelete)) {
-            deleteNewContact(contactToDelete);
+            dispatch(deleteContact(contactToDelete.id));
           } else {
-            deleteAPIContact(contactToDelete);
+            dispatch(deleteAPIContact(contactToDelete.name));
           }
           setDeletedContactName(contactToDelete.name);
           setDeleteSuccess(true);

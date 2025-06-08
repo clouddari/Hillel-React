@@ -7,11 +7,15 @@ import MyButton from "../Button";
 import { Alert } from "@mui/material";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import PhoneInput from "../PhoneValidation";
+import { useSelector, useDispatch } from "react-redux";
+import { updateContact } from "../../features/contacts/contactsSlice";
 
-function EditContact({ newContacts, setNewContacts }) {
+function EditContact() {
   const location = useLocation();
   const navigate = useNavigate();
   const contact = location.state?.contact;
+  const newContacts = useSelector((state) => state.contacts.newContacts);
+  const dispatch = useDispatch();
 
   const [form, setForm] = useState(
     contact || { name: "", email: "", phone: "" }
@@ -28,6 +32,9 @@ function EditContact({ newContacts, setNewContacts }) {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  if (!contact) {
+    return <p>No contact found. Please return to contact list.</p>;
+  }
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -55,11 +62,15 @@ function EditContact({ newContacts, setNewContacts }) {
       return;
     }
 
-    const updatedContacts = newContacts
-      .filter((c) => c.email !== initialEmail)
-      .concat(form);
+    dispatch(
+      updateContact({
+        id: contact.id,
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+      })
+    );
 
-    setNewContacts(updatedContacts);
     setError("");
     navigate("/contact-list", { state: { success: true } });
   };

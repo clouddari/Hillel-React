@@ -6,11 +6,15 @@ import TextField from "@mui/material/TextField";
 import { useNavigate } from "react-router-dom";
 import { Alert, Grid } from "@mui/material";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import { useDispatch, useSelector } from "react-redux";
+import { addContact } from "../../features/contacts/contactsSlice";
 
-function AddContact({ newContacts, setNewContacts }) {
+function AddContact() {
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const newContacts = useSelector((state) => state.contacts.newContacts);
+  const dispatch = useDispatch();
 
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -44,7 +48,7 @@ function AddContact({ newContacts, setNewContacts }) {
       return;
     }
 
-    setNewContacts([...newContacts, form]);
+    dispatch(addContact(form.name, form.email, form.phone));
     setForm({ name: "", email: "", phone: "" });
     setError("");
     navigate("/contact-list", { state: { success: true } });
